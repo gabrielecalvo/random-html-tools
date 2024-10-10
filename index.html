@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        .card {
+            margin: 20px auto; /* Center cards */
+            width: 80%; /* Adjust width */
+            max-width: 300px; /* Maximum width */
+            padding: 40px;
+            border: none; /* Remove border */
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            text-align: center;
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        }
+        .card a {
+            color: #007bff; /* Bootstrap primary color for links */
+            text-decoration: none;
+            font-size: 18px; /* Larger font size */
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .card a:hover {
+            color: #0056b3; /* Darker shade for link hover */
+            text-decoration: underline; /* Add underline on hover */
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <a href="eleGantt/index.html">EleGantt</a>
+        <p>A simple Gantt chart maker form custom tab-separated data (e.g. copied from excel)</p>
+    </div>
+    <div class="card">
+        <a href="random-picker/index.html">Random Picker</a>
+        <p>A simple random team member picker with exclusion feature</p>
+    </div>
+</body>
+</html>
