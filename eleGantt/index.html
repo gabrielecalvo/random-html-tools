@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>EleGantt</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+    <style>
+        .chart-container {
+            width: 80%;
+            margin: 0 auto;
+        }
+    </style>
+    <link rel="icon" href="https://img.icons8.com/?size=100&id=16767&format=png&color=3853E0" type="image/x-icon">
+</head>
+
+<body>
+
+
+    <div class="chart-container">
+        <textarea id="excelData" rows="10" cols="100%" placeholder="Paste Excel table data here"></textarea>
+        <button id="parseButton">Parse Data</button>
+        <canvas id="ganttChart"></canvas>
+    </div>
+
+
+    <script>
+        const ctx = document.getElementById('ganttChart').getContext('2d');
+        const txtArea = document.getElementById('excelData');
+        const colors = [
+            'rgba(255, 99, 132, 0.5)',
+            'rgba(54, 162, 235, 0.5)',
+            'rgba(255, 206, 86, 0.5)',
+            'rgba(75, 192, 192, 0.5)',
+            'rgba(153, 102, 255, 0.5)',
+            'rgba(255, 159, 64, 0.5)',
+        ];
+
+        txtArea.value = `groupA	😮	2024-11-30T19:30	2024-11-30T21:30
+groupG	🎄	2024-11-30T21:15	2024-11-30T22:00
+groupA	🎸	2024-11-30T22:15	2024-11-30T23:00`
+
+
+        function extractTexboxAreaDataIntoTasks() {
+            const lines = txtArea.value.trim().split('\n');
+            return lines.map(line => {
+                const [group, name, start, end] = line.split('\t');
+                return { group, name, start, end };
+            });
+        }
+
+        function convertTasksToDataset(tasks) {
+            // Group tasks by their 'group' attribute
+            const groupedTasks = tasks.reduce((acc, task) => {
+                acc[task.group] = acc[task.group] || [];
+                acc[task.group].push(task);
+                return acc;
+            }, {});
+
+            return Object.keys(groupedTasks).map((group, groupIdx) => {
+                const data = groupedTasks[group].map((task, taskIdx) => ({
+                    x: [moment(task.start).valueOf(), moment(task.end).valueOf()],
+                    y: taskIdx
+                }));
+
+                return {
+                    label: group,
+                    names: groupedTasks[group].map(task => task.name),
+                    data: data,
+                    backgroundColor: colors[groupIdx % colors.length],
+                    barThickness: 30,
+                    yAxisID: 'yAxis'
+                };
+            });
+        }
+
+        const tasks = extractTexboxAreaDataIntoTasks();
+        const ganttChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                datasets: convertTasksToDataset(tasks)
+            },
+            options: {
+                indexAxis: 'y',
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            parser: 'YYYY-MM-DDTHH:mm',
+                            unit: 'hour',
+                            displayFormats: {
+                                hour: 'D MMM, hA'
+                            }
+                        }
+                    },
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            title: function (context) {
+                                taskIdx = context[0].raw.y;
+                                return `[${context[0].dataset.label}] ${context[0].dataset.names[taskIdx]}`;
+                            },
+                            label: function (context) {
+                                formattedDates = context.raw.x.map(timestamp =>
+                                    new Intl.DateTimeFormat('en-UK', {
+                                        month: 'short', day: 'numeric',
+                                        hour: 'numeric', minute: 'numeric',
+                                        hour12: false
+                                    }).format(new Date(timestamp))
+                                )
+                                return [`start: ${formattedDates[0]}`, `end: ${formattedDates[1]}`];
+                            }
+                        }
+                    },
+                    zoom: {
+                        pan: {
+                            enabled: true,
+                            modifierKey: 'ctrl',
+                        },
+                        zoom: {
+                            wheel: {
+                                enabled: true,
+                            },
+                            pinch: {
+                                enabled: true
+                            }
+                        }
+                    }
+                },
+            },
+            plugins: [{
+                afterDraw: chart => {
+                    const ctx = chart.ctx;
+                    ctx.save();
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.font = '16px Arial';
+                    chart.data.datasets.forEach((dataset, i) => {
+                        const meta = chart.getDatasetMeta(i);
+                        meta.data.forEach((bar, index) => {
+                            const xPos = (bar.x + bar.base) / 2;
+                            const yPos = bar.y;
+                            ctx.fillText(dataset.names[index], xPos, yPos);
+                        });
+                    });
+                    ctx.restore();
+                }
+            }]
+        });
+
+        function parseTexboxAreaDataIntoTasks(textareaValue) {
+            const lines = textareaValue.trim().split('\n');
+            return lines.map(line => {
+                const [group, name, start, end] = line.split('\t');
+                return { group, name, start, end };
+            });
+        }
+
+        document.getElementById('parseButton').addEventListener('click', function () {
+            const textareaValue = document.getElementById('excelData').value;
+            const newTasks = parseTexboxAreaDataIntoTasks(textareaValue)
+            const newData = convertTasksToDataset(newTasks)
+            ganttChart.data.datasets = newData;
+            ganttChart.update();
+        });
+    </script>
+</body>
+
+</html>
